@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Switch n' Slide</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 2rem;
+      background: #f0f4f8;
+      color: #334155;
+      line-height: 1.5;
+    }
+    .container {
+      margin: 0 auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      display: inline-block;
+      min-width: 500px;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: #1e40af;
+    }
+    p#goal {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      color: #475569;
+    }
+     .difficulty-selector {
+       margin-bottom: 1.5rem;
+       font-size: 1.1rem;
+    }
+    .difficulty-selector label {
+        margin: 0 0.5rem;
+        cursor: pointer;
+    }
+    .difficulty-selector input[type="radio"] {
+        margin-right: 0.3rem;
+    }
+    .rules-container {
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      min-height: 100px;
+    }
+    .rule {
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .rule-label {
+      min-width: 130px;
+      text-align: right;
+      font-weight: 500;
+    }
+    select {
+      padding: 0.5rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      border: 1px solid #cbd5e1;
+      background-color: white;
+    }
+    select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 0 0.5rem;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    button.secondary {
+      background: #64748b;
+    }
+    button.secondary:hover {
+      background: #475569;
+    }
+    #result {
+      margin-top: 1.5rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+      height: 1.5em;
+    }
+    .success {
+      color: #16a34a;
+    }
+    .failure {
+      color: #dc2626;
+    }
+    #tape {
+      margin: 3rem auto 1rem;
+      font-family: monospace;
+      position: relative;
+    }
+    .tape-container {
+      position: relative;
+      margin: 0 auto;
+      /* Width set dynamically */
+      height: 40px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+    }
+    .tape-wrapper {
+      display: block;
+      /* Width set dynamically */
+      height: 30px;
+      position: absolute;
+      top: 5px;
+      left: 0;
+      border-top: 1px solid #cbd5e1;
+      border-bottom: 1px solid #cbd5e1;
+      overflow: hidden;
+    }
+    .tape-inner {
+      white-space: nowrap;
+      transition: transform 0.3s ease-out;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .cell {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      line-height: 28px;
+      border: 1px solid #94a3b8;
+      margin: 0 1px;
+      background: #fff;
+      font-weight: 600;
+      font-size: 1.2rem;
+      text-align: center;
+    }
+    .cell.active {
+      background: #dbeafe;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+      position: relative;
+    }
+    .controls {
+      margin-top: 2rem;
+    }
+    .step-counter {
+      font-size: 1.1rem;
+      margin-top: 1rem;
+      font-weight: 500;
+    }
+    .rule-header {
+      font-weight: bold;
+      margin-bottom: 1rem;
+      color: #475569;
+    }
+    .state-indicator {
+      font-size: 1.1rem;
+      margin-top: 1rem;
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+    .current-state {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      background: #dbeafe;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Switch n' Slide</h1>
+
+    <div class="difficulty-selector">
+      <strong>Difficulty:</strong>
+      <label><input type="radio" name="difficulty" value="easy" onclick="setupGame('easy')"> Easy</label>
+      <label><input type="radio" name="difficulty" value="medium" onclick="setupGame('medium')" checked> Medium</label>
+      <label><input type="radio" name="difficulty" value="hard" onclick="setupGame('hard')"> Hard</label>
+    </div>
+
+    <p id="goal">Goal: Define rules that slide the tape exactly 6 times.</p>
+
+    <div class="rules-container">
+      <div class="rule-header">Define your rules:</div>
+      <div id="rules"></div>
+    </div>
+
+    <div class="controls">
+      <button onclick="runMachine()">Run</button>
+      <button onclick="randomizeRules()" class="secondary">Randomize Rules</button>
+    </div>
+
+    <div id="result"></div>
+    <div class="step-counter">Slides: <span id="stepCount">0</span></div>
+    <div class="state-indicator">Current Mode: <span id="currentState" class="current-state">A</span></div>
+
+    <div id="tape">
+        <div id="tape-container" class="tape-container">
+          <div id="tape-wrapper" class="tape-wrapper">
+            <div id="tape-inner" class="tape-inner"></div>
+          </div>
+        </div>
+    </div>
+    </div>
+
+  <script>
+    // --- Game Configuration ---
+    let numStates = 2;
+    let states = ['A', 'B'];
+    let nextStateOptions = ['A', 'B'];
+    let targetSteps = 6;
+
+    const symbols = ['0', '1'];
+    const writeOptions = ['0', '1'];
+    const moveOptions = ['L', 'R'];
+    const cellWidth = 28; // Cell width
+    const cellMargin = 2; // Total margin (1px left + 1px right)
+    const cellTotalWidth = cellWidth + cellMargin; // 30
+
+    // --- Machine Execution Globals ---
+    let isRunning = false;
+    let machineTimeout = null;
+    let currentTape = {};
+    let currentHeadPosition = 0;
+
+    // --- Setup ---
+    function setupGame(difficulty) {
+        stopMachine();
+
+        const goalText = document.getElementById('goal');
+        if (difficulty === 'easy') {
+            numStates = 1;
+            states = ['A'];
+            targetSteps = 1;
+            goalText.textContent = `Goal: Define rules that slide the tape exactly ${targetSteps} time.`;
+        } else if (difficulty === 'hard') {
+            numStates = 3;
+            states = ['A', 'B', 'C'];
+            targetSteps = 21;
+            goalText.textContent = `Goal: Define rules that slide the tape exactly ${targetSteps} times.`;
+        } else { // Medium (default)
+            numStates = 2;
+            states = ['A', 'B'];
+            targetSteps = 6;
+            goalText.textContent = `Goal: Define rules that slide the tape exactly ${targetSteps} times.`;
+        }
+        nextStateOptions = [...states];
+
+        buildUI();
+        initializeTape();
+        resetMachine();
+    }
+
+    function createDropdown(options, id) {
+      const select = document.createElement('select');
+      select.id = id;
+      for (const option of options) {
+        const opt = document.createElement('option');
+        opt.value = option;
+        opt.textContent = option;
+        select.appendChild(opt);
+      }
+      return select;
+    }
+
+    function buildUI() {
+      const container = document.getElementById('rules');
+      if (!container) {
+          console.error("Rules container not found!");
+          return;
+      }
+      container.innerHTML = '';
+      for (const state of states) {
+        for (const symbol of symbols) {
+          const ruleDiv = document.createElement('div');
+          ruleDiv.className = 'rule';
+
+          const ruleLabel = document.createElement('div');
+          ruleLabel.className = 'rule-label';
+          ruleLabel.textContent = `Mode ${state}|${symbol}:`;
+          ruleDiv.appendChild(ruleLabel);
+
+          ruleDiv.appendChild(document.createTextNode("Mark "));
+          const writeSel = createDropdown(writeOptions, `${state}${symbol}-write`);
+          ruleDiv.appendChild(writeSel);
+
+          ruleDiv.appendChild(document.createTextNode(" Slide "));
+          const moveSel = createDropdown(moveOptions, `${state}${symbol}-move`);
+          ruleDiv.appendChild(moveSel);
+
+          ruleDiv.appendChild(document.createTextNode(" Switch to Mode "));
+          const nextSel = createDropdown([...nextStateOptions, 'H'], `${state}${symbol}-next`);
+          ruleDiv.appendChild(nextSel);
+
+          container.appendChild(ruleDiv);
+        }
+      }
+    }
+
+    function getRule(state, symbol) {
+      const writeEl = document.getElementById(`${state}${symbol}-write`);
+      const moveEl = document.getElementById(`${state}${symbol}-move`);
+      const nextEl = document.getElementById(`${state}${symbol}-next`);
+
+       if (!writeEl || !moveEl || !nextEl) {
+           console.error(`Rule elements not found for state ${state}, symbol ${symbol}`);
+           return { write: symbol, move: 'R', next: state };
+       }
+      return { write: writeEl.value, move: moveEl.value, next: nextEl.value };
+    }
+
+    // --- Tape Visualization ---
+    function initializeTape() {
+      const tapeContainer = document.getElementById('tape-container');
+      const tapeWrapper = document.getElementById('tape-wrapper');
+      const tapeInner = document.getElementById('tape-inner');
+
+      if (!tapeContainer || !tapeWrapper || !tapeInner) {
+          console.error("Tape elements not found during initialization!");
+          return;
+      }
+
+      tapeInner.innerHTML = '';
+      tapeInner.style.transform = 'translateX(0px)';
+
+      const numVisibleCells = 2 * targetSteps + 1;
+      const tapeWidth = numVisibleCells * cellTotalWidth;
+
+      tapeContainer.style.width = `${tapeWidth}px`;
+      tapeWrapper.style.width = `${tapeWidth}px`;
+
+      for (let i = 0; i < numVisibleCells; i++) {
+        const cell = document.createElement('span');
+        cell.className = 'cell';
+        cell.textContent = '0';
+        cell.setAttribute('data-index', i - targetSteps);
+        tapeInner.appendChild(cell);
+      }
+    }
+
+    function updateTape(tape, headPosition) {
+        const tapeWrapper = document.getElementById('tape-wrapper');
+        const tapeInner = document.getElementById('tape-inner');
+
+        if (!tapeWrapper || !tapeInner) {
+          console.error("Tape elements not found during update!");
+          return;
+        }
+        const cells = tapeInner.querySelectorAll('.cell');
+        if (cells.length === 0) {
+            console.error("No cells found to update!");
+            return;
+        }
+
+        const tapeWidth = parseFloat(tapeWrapper.style.width);
+        const visualCenter = tapeWidth / 2;
+        const centerCellIndexInDOM = Math.floor(cells.length / 2);
+
+        // Remove 'active' class from all cells first
+        cells.forEach(cell => {
+            cell.classList.remove('active');
+            const logicalIndex = parseInt(cell.getAttribute('data-index'));
+            const value = tape[logicalIndex] || '0';
+            cell.textContent = value;
+        });
+
+        // Find and highlight the active cell
+        for (let cell of cells) {
+            const logicalIndex = parseInt(cell.getAttribute('data-index'));
+            if (logicalIndex === headPosition) {
+                cell.classList.add('active');
+                break;
+            }
+        }
+
+        // Center the active cell in the view
+        const headCenterPosition = (headPosition + centerCellIndexInDOM) * cellTotalWidth + (cellTotalWidth / 2);
+        const offset = visualCenter - headCenterPosition;
+        tapeInner.style.transform = `translateX(${offset}px)`;
+    }
+
+    // --- Machine Control ---
+    function stopMachine() {
+         if (machineTimeout) {
+            clearTimeout(machineTimeout);
+            machineTimeout = null;
+         }
+         isRunning = false;
+    }
+
+    function resetMachine() {
+      stopMachine();
+      currentTape = {};
+      currentHeadPosition = 0;
+
+      document.getElementById('currentState').textContent = 'A';
+      document.getElementById('result').textContent = '';
+      document.getElementById('result').className = '';
+      document.getElementById('stepCount').textContent = '0';
+
+      if (document.getElementById('tape-inner')?.children.length > 0) {
+           updateTape(currentTape, currentHeadPosition);
+      } else {
+           initializeTape();
+           setTimeout(() => updateTape(currentTape, currentHeadPosition), 0);
+      }
+    }
+
+    function runMachine() {
+      if (isRunning) return;
+      resetMachine();
+      isRunning = true;
+
+      let tape = { ...currentTape };
+      let headPosition = currentHeadPosition;
+      let state = 'A';
+      let steps = 0;
+      const maxSteps = targetSteps;
+
+      function step() {
+        if (!isRunning) return;
+        const result = document.getElementById('result');
+
+        if (state === 'H' || steps > maxSteps) {
+           if (state === 'H' && steps === maxSteps) {
+                result.textContent = `Success! You slid exactly ${steps} time(s).`;
+                result.className = 'success';
+            } else if (state === 'H' && steps < maxSteps) {
+                 result.textContent = `Fail! You stopped sliding too early.`;
+                 result.className = 'failure';
+            } else {
+                result.textContent = `Fail! You slid more than ${maxSteps} time(s).`;
+                result.className = 'failure';
+            }
+            stopMachine();
+            return;
+        }
+
+        const currentSymbol = tape[headPosition] || '0';
+        const rule = getRule(state, currentSymbol);
+
+        tape[headPosition] = rule.write;
+        headPosition += rule.move === 'R' ? 1 : -1;
+        state = rule.next;
+        steps++;
+
+        document.getElementById('stepCount').textContent = steps;
+        document.getElementById('currentState').textContent = state;
+        updateTape(tape, headPosition);
+
+        // Use a speed consistent with the animation time
+        machineTimeout = setTimeout(step, 350);
+      }
+      step();
+    }
+
+    // --- Utility ---
+    function randomChoice(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function randomizeRules() {
+       stopMachine();
+       const ruleIds = [];
+       for (const state of states) {
+         for (const symbol of symbols) {
+           ruleIds.push(`${state}${symbol}`);
+         }
+       }
+
+       if (ruleIds.length > 0) {
+           const haltRuleIndex = Math.floor(Math.random() * ruleIds.length);
+           for (let i = 0; i < ruleIds.length; i++) {
+               const id = ruleIds[i];
+               const writeEl = document.getElementById(`${id}-write`);
+               const moveEl = document.getElementById(`${id}-move`);
+               const nextEl = document.getElementById(`${id}-next`);
+               if (writeEl && moveEl && nextEl) {
+                    writeEl.value = randomChoice(writeOptions);
+                    moveEl.value = randomChoice(moveOptions);
+                    nextEl.value = (i === haltRuleIndex) ? 'H' : randomChoice(nextStateOptions);
+               } else {
+                    console.warn(`Could not find elements for rule ID: ${id} during randomization.`);
+               }
+           }
+       }
+       resetMachine();
+    }
+
+    // Initialize when page loads
+    window.onload = () => {
+        const defaultDifficulty = 'medium';
+        const radio = document.querySelector(`input[name="difficulty"][value="${defaultDifficulty}"]`);
+        if (radio) radio.checked = true;
+        setupGame(defaultDifficulty);
+    };
+  </script>
+</body>
+</html>
