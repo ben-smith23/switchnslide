@@ -195,7 +195,7 @@
     <p id="goal">Goal: Define rules that slide the tape exactly 3 times.</p>
 
     <div class="rules-container">
-      <div class="rule-header">Define your rules:</div>
+      <div class="rule-header">Rules:</div>
       <div id="rules"></div>
     </div>
 
@@ -220,7 +220,7 @@
     // --- Game Configuration ---
     let numStates = 2;
     let states = ['A', 'B'];
-    let nextStateOptions = ['A', 'B'];
+    let nextStateOptions = ['Yes', 'No'];
     let targetSteps = 3; // Default level 3
     let currentLevel = 3;
 
@@ -243,7 +243,7 @@
         targetSteps = level;
 
         const goalText = document.getElementById('goal');
-        goalText.textContent = `Goal: Define rules that slide the tape exactly ${targetSteps} time${targetSteps !== 1 ? 'Stop' : ''}.`;
+        goalText.innerHTML = `Goal: Define rules that slide the tape exactly ${targetSteps} time${targetSteps !== 1 ? 's' : ''}.<br>The tape will be marked with X as you slide past.`;
 
         buildUI();
         initializeTape();
@@ -278,7 +278,7 @@
 
           const ruleLabel = document.createElement('div');
           ruleLabel.className = 'rule-label';
-          ruleLabel.textContent = `Mode ${state}|${symbol}:`;
+          ruleLabel.textContent = `If Mode is ${state} and Tape is ${symbol}:`;
           ruleDiv.appendChild(ruleLabel);
 
           // Always mark X (removed mark dropdown)
@@ -287,7 +287,7 @@
           const moveSel = createDropdown(moveOptions, `${state}${symbol}-move`);
           ruleDiv.appendChild(moveSel);
 
-          ruleDiv.appendChild(document.createTextNode(" Switch "));
+          ruleDiv.appendChild(document.createTextNode(" Switch Mode? "));
           const nextSel = createDropdown([...nextStateOptions, 'Stop'], `${state}${symbol}-next`);
           ruleDiv.appendChild(nextSel);
 
@@ -304,7 +304,18 @@
            console.error(`Rule elements not found for state ${state}, symbol ${symbol}`);
            return { write: 'X', move: 'Right', next: state };
        }
-      return { write: 'X', move: moveEl.value, next: nextEl.value };
+       let nextVal = nextEl.value;
+       let resolvedNext;
+
+       if (nextVal === 'Stop') {
+           resolvedNext = 'Stop';
+       } else if (nextVal === 'Yes') {
+           resolvedNext = state === 'A' ? 'B' : 'A';
+       } else {
+          resolvedNext = state;
+       }
+
+       return { write: 'X', move: moveEl.value, next: resolvedNext };
     }
 
     // --- Tape Visualization ---
