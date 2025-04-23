@@ -32,15 +32,15 @@
       margin-bottom: 1rem;
       color: #475569;
     }
-     .difficulty-selector {
+     .level-selector {
        margin-bottom: 1.5rem;
        font-size: 1.1rem;
     }
-    .difficulty-selector label {
+    .level-selector label {
         margin: 0 0.5rem;
         cursor: pointer;
     }
-    .difficulty-selector input[type="radio"] {
+    .level-selector input[type="radio"] {
         margin-right: 0.3rem;
     }
     .rules-container {
@@ -74,11 +74,6 @@
       border-color: #3b82f6;
       box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
     }
-    select:disabled {
-      background-color: #e2e8f0;
-      color: #64748b;
-      cursor: not-allowed;
-    }
     button {
       background: #2563eb;
       color: white;
@@ -92,12 +87,6 @@
     }
     button:hover {
       background: #1d4ed8;
-    }
-    button.secondary {
-      background: #64748b;
-    }
-    button.secondary:hover {
-      background: #475569;
     }
     #result {
       margin-top: 1.5rem;
@@ -193,14 +182,17 @@
   <div class="container">
     <h1>Switch n' Slide</h1>
 
-    <div class="difficulty-selector">
-      <strong>Difficulty:</strong>
-      <label><input type="radio" name="difficulty" value="easy" onclick="setupGame('easy')"> Easy</label>
-      <label><input type="radio" name="difficulty" value="medium" onclick="setupGame('medium')" checked> Medium</label>
-      <label><input type="radio" name="difficulty" value="hard" onclick="setupGame('hard')"> Hard</label>
+    <div class="level-selector">
+      <strong>Level:</strong>
+      <label><input type="radio" name="level" value="1" onclick="setupGame(1)"> 1</label>
+      <label><input type="radio" name="level" value="2" onclick="setupGame(2)"> 2</label>
+      <label><input type="radio" name="level" value="3" onclick="setupGame(3)" checked> 3</label>
+      <label><input type="radio" name="level" value="4" onclick="setupGame(4)"> 4</label>
+      <label><input type="radio" name="level" value="5" onclick="setupGame(5)"> 5</label>
+      <label><input type="radio" name="level" value="6" onclick="setupGame(6)"> 6</label>
     </div>
 
-    <p id="goal">Goal: Define rules that slide the tape exactly 6 times.</p>
+    <p id="goal">Goal: Define rules that slide the tape exactly 3 times.</p>
 
     <div class="rules-container">
       <div class="rule-header">Define your rules:</div>
@@ -209,7 +201,6 @@
 
     <div class="controls">
       <button onclick="runMachine()">Begin</button>
-      <button onclick="randomizeRules()" class="secondary">Randomize Rules</button>
     </div>
 
     <div id="result"></div>
@@ -230,11 +221,10 @@
     let numStates = 2;
     let states = ['A', 'B'];
     let nextStateOptions = ['A', 'B'];
-    let targetSteps = 6;
-    let currentDifficulty = 'medium';
+    let targetSteps = 3; // Default level 3
+    let currentLevel = 3;
 
     const symbols = ['O', 'X'];
-    const writeOptions = ['O', 'X'];
     const moveOptions = ['L', 'R'];
     const cellWidth = 28; // Cell width
     const cellMargin = 2; // Total margin (1px left + 1px right)
@@ -247,46 +237,27 @@
     let currentHeadPosition = 0;
 
     // --- Setup ---
-    function setupGame(difficulty) {
+    function setupGame(level) {
         stopMachine();
-        currentDifficulty = difficulty;
+        currentLevel = level;
+        targetSteps = level;
 
         const goalText = document.getElementById('goal');
-        if (difficulty === 'easy') {
-            numStates = 1;
-            states = ['A'];
-            targetSteps = 1;
-            goalText.textContent = `Goal: Define rules that slide the tape exactly ${targetSteps} time.`;
-        } else if (difficulty === 'hard') {
-            numStates = 3;
-            states = ['A', 'B', 'C'];
-            targetSteps = 21;
-            goalText.textContent = `Goal: Define rules that slide the tape exactly ${targetSteps} times.`;
-        } else { // Medium (default)
-            numStates = 2;
-            states = ['A', 'B'];
-            targetSteps = 6;
-            goalText.textContent = `Goal: Define rules that slide the tape exactly ${targetSteps} times.`;
-        }
-        nextStateOptions = [...states];
+        goalText.textContent = `Goal: Define rules that slide the tape exactly ${targetSteps} time${targetSteps !== 1 ? 's' : ''}.`;
 
         buildUI();
         initializeTape();
         resetMachine();
     }
 
-    function createDropdown(options, id, defaultValue = null, disabled = false) {
+    function createDropdown(options, id) {
       const select = document.createElement('select');
       select.id = id;
-      select.disabled = disabled;
       
       for (const option of options) {
         const opt = document.createElement('option');
         opt.value = option;
         opt.textContent = option;
-        if (defaultValue !== null && option === defaultValue) {
-          opt.selected = true;
-        }
         select.appendChild(opt);
       }
       return select;
@@ -310,55 +281,14 @@
           ruleLabel.textContent = `Mode ${state}|${symbol}:`;
           ruleDiv.appendChild(ruleLabel);
 
-          // Determine default values and disabled state based on difficulty and rule
-          let writeDisabled = false;
-          let moveDisabled = false;
-          let nextDisabled = false;
-          let writeDefault = null;
-          let moveDefault = null;
-          let nextDefault = null;
+          // Always mark X (removed mark dropdown)
 
-          // Easy difficulty: Only allow Switch to Mode dropdown for A|O to be changed
-          if (currentDifficulty === 'easy') {
-            writeDisabled = true;
-            moveDisabled = true;
-            nextDisabled = (state !== 'A' || symbol !== 'O');
-          }
-          // Medium difficulty: All Mark dropdowns set to X and disabled
-          // Mode A|O has preset values and is disabled
-          else if (currentDifficulty === 'medium') {
-            writeDefault = 'X';
-            writeDisabled = true;
-            
-            if (state === 'A' && symbol === 'O') {
-              moveDefault = 'L';
-              nextDefault = 'B';
-              moveDisabled = true;
-              nextDisabled = true;
-            }
-          } 
-          // Hard difficulty: Mode A|O is preset and disabled
-          else if (currentDifficulty === 'hard') {
-            if (state === 'A' && symbol === 'O') {
-              writeDefault = 'X';
-              moveDefault = 'L';
-              nextDefault = 'B';
-              writeDisabled = true;
-              moveDisabled = true;
-              nextDisabled = true;
-            }
-          }
-
-          ruleDiv.appendChild(document.createTextNode("Mark "));
-          const writeSel = createDropdown(writeOptions, `${state}${symbol}-write`, writeDefault, writeDisabled);
-          ruleDiv.appendChild(writeSel);
-
-          ruleDiv.appendChild(document.createTextNode(" Slide "));
-          const moveSel = createDropdown(moveOptions, `${state}${symbol}-move`, moveDefault, moveDisabled);
+          ruleDiv.appendChild(document.createTextNode("Slide "));
+          const moveSel = createDropdown(moveOptions, `${state}${symbol}-move`);
           ruleDiv.appendChild(moveSel);
 
           ruleDiv.appendChild(document.createTextNode(" Switch to Mode "));
-          const nextSel = createDropdown([...nextStateOptions, 'S'], `${state}${symbol}-next`, nextDefault, nextDisabled);
+          const nextSel = createDropdown([...nextStateOptions, 'S'], `${state}${symbol}-next`);
           ruleDiv.appendChild(nextSel);
 
           container.appendChild(ruleDiv);
@@ -367,15 +297,14 @@
     }
 
     function getRule(state, symbol) {
-      const writeEl = document.getElementById(`${state}${symbol}-write`);
       const moveEl = document.getElementById(`${state}${symbol}-move`);
       const nextEl = document.getElementById(`${state}${symbol}-next`);
 
-       if (!writeEl || !moveEl || !nextEl) {
+       if (!moveEl || !nextEl) {
            console.error(`Rule elements not found for state ${state}, symbol ${symbol}`);
-           return { write: symbol, move: 'R', next: state };
+           return { write: 'X', move: 'R', next: state };
        }
-      return { write: writeEl.value, move: moveEl.value, next: nextEl.value };
+      return { write: 'X', move: moveEl.value, next: nextEl.value };
     }
 
     // --- Tape Visualization ---
@@ -523,72 +452,12 @@
       step();
     }
 
-    // --- Utility ---
-    function randomChoice(arr) {
-      return arr[Math.floor(Math.random() * arr.length)];
-    }
-
-    function randomizeRules() {
-       stopMachine();
-       const ruleIds = [];
-       
-       // Collect all rule IDs that should be randomized based on current difficulty
-       for (const state of states) {
-         for (const symbol of symbols) {
-           // Skip Mode A|O for medium and hard difficulties
-           if ((currentDifficulty === 'medium' || currentDifficulty === 'hard') && state === 'A' && symbol === 'O') {
-             continue;
-           }
-           ruleIds.push(`${state}${symbol}`);
-         }
-       }
-
-       if (ruleIds.length > 0) {
-           const haltRuleIndex = Math.floor(Math.random() * ruleIds.length);
-           for (let i = 0; i < ruleIds.length; i++) {
-               const id = ruleIds[i];
-               const writeEl = document.getElementById(`${id}-write`);
-               const moveEl = document.getElementById(`${id}-move`);
-               const nextEl = document.getElementById(`${id}-next`);
-               
-               if (writeEl && moveEl && nextEl) {
-                    // In easy mode, only change the next state dropdown for A|O
-                    if (currentDifficulty === 'easy') {
-                      if (id === 'AO') {
-                        nextEl.value = (i === haltRuleIndex) ? 'S' : randomChoice(nextStateOptions);
-                      }
-                    }
-                    // In medium mode, don't change write values
-                    else if (currentDifficulty === 'medium') {
-                      moveEl.value = randomChoice(moveOptions);
-                      nextEl.value = (i === haltRuleIndex) ? 'S' : randomChoice(nextStateOptions);
-                    }
-                    // In hard mode, randomize all applicable dropdowns
-                    else {
-                      if (!writeEl.disabled) {
-                        writeEl.value = randomChoice(writeOptions);
-                      }
-                      if (!moveEl.disabled) {
-                        moveEl.value = randomChoice(moveOptions);
-                      }
-                      if (!nextEl.disabled) {
-                        nextEl.value = (i === haltRuleIndex) ? 'S' : randomChoice(nextStateOptions);
-                      }
-                    }
-               } else {
-                    console.warn(`Could not find elements for rule ID: ${id} during randomization.`);
-               }
-           }
-       }
-       resetMachine();
-    }
-
     // Initialize when page loads
     window.onload = () => {
-        const defaultDifficulty = 'medium';
-        const radio = document.querySelector(`input[name="difficulty"][value="${defaultDifficulty}"]`);
+        const defaultLevel = 3;
+        const radio = document.querySelector(`input[name="level"][value="${defaultLevel}"]`);
         if (radio) radio.checked = true;
-        setupGame(defaultDifficulty);
+        setupGame(defaultLevel);
     };
   </script>
 </body>
