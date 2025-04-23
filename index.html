@@ -432,13 +432,13 @@
 
         if (state === 'Stop' || steps > maxSteps) {
            if (state === 'Stop' && steps === maxSteps) {
-                result.textContent = `Success! You slid exactly ${steps} time(s).`;
+                result.textContent = `Success! You slid exactly ${steps} time${targetSteps !== 1 ? 's' : ''}.`;
                 result.className = 'success';
             } else if (state === 'Stop' && steps < maxSteps) {
                  result.textContent = `Fail! You stopped sliding too early.`;
                  result.className = 'failure';
             } else {
-                result.textContent = `Fail! You slid more than ${maxSteps} time(s).`;
+                result.textContent = `Fail! You slid more than ${maxSteps} time${targetSteps !== 1 ? 's' : ''}.`;
                 result.className = 'failure';
             }
             stopMachine();
