@@ -203,7 +203,7 @@
     </div>
 
     <div class="controls">
-      <button onclick="runMachine()">Run</button>
+      <button onclick="runMachine()">Begin</button>
       <button onclick="randomizeRules()" class="secondary">Randomize Rules</button>
     </div>
 
@@ -227,8 +227,8 @@
     let nextStateOptions = ['A', 'B'];
     let targetSteps = 6;
 
-    const symbols = ['0', '1'];
-    const writeOptions = ['0', '1'];
+    const symbols = ['O', 'X'];
+    const writeOptions = ['O', 'X'];
     const moveOptions = ['L', 'R'];
     const cellWidth = 28; // Cell width
     const cellMargin = 2; // Total margin (1px left + 1px right)
@@ -349,7 +349,7 @@
       for (let i = 0; i < numVisibleCells; i++) {
         const cell = document.createElement('span');
         cell.className = 'cell';
-        cell.textContent = '0';
+        cell.textContent = 'O';
         cell.setAttribute('data-index', i - targetSteps);
         tapeInner.appendChild(cell);
       }
@@ -377,7 +377,7 @@
         cells.forEach(cell => {
             cell.classList.remove('active');
             const logicalIndex = parseInt(cell.getAttribute('data-index'));
-            const value = tape[logicalIndex] || '0';
+            const value = tape[logicalIndex] || 'O';
             cell.textContent = value;
         });
 
@@ -413,7 +413,7 @@
       document.getElementById('currentState').textContent = 'A';
       document.getElementById('result').textContent = '';
       document.getElementById('result').className = '';
-      document.getElementById('stepCount').textContent = '0';
+      document.getElementById('stepCount').textContent = 'O';
 
       if (document.getElementById('tape-inner')?.children.length > 0) {
            updateTape(currentTape, currentHeadPosition);
@@ -453,7 +453,7 @@
             return;
         }
 
-        const currentSymbol = tape[headPosition] || '0';
+        const currentSymbol = tape[headPosition] || 'O';
         const rule = getRule(state, currentSymbol);
 
         tape[headPosition] = rule.write;
