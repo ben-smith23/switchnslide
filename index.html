@@ -306,7 +306,7 @@
           ruleDiv.appendChild(moveSel);
 
           ruleDiv.appendChild(document.createTextNode(" Switch to Mode "));
-          const nextSel = createDropdown([...nextStateOptions, 'H'], `${state}${symbol}-next`);
+          const nextSel = createDropdown([...nextStateOptions, 'S'], `${state}${symbol}-next`);
           ruleDiv.appendChild(nextSel);
 
           container.appendChild(ruleDiv);
@@ -438,11 +438,11 @@
         if (!isRunning) return;
         const result = document.getElementById('result');
 
-        if (state === 'H' || steps > maxSteps) {
-           if (state === 'H' && steps === maxSteps) {
+        if (state === 'S' || steps > maxSteps) {
+           if (state === 'S' && steps === maxSteps) {
                 result.textContent = `Success! You slid exactly ${steps} time(s).`;
                 result.className = 'success';
-            } else if (state === 'H' && steps < maxSteps) {
+            } else if (state === 'S' && steps < maxSteps) {
                  result.textContent = `Fail! You stopped sliding too early.`;
                  result.className = 'failure';
             } else {
@@ -495,7 +495,7 @@
                if (writeEl && moveEl && nextEl) {
                     writeEl.value = randomChoice(writeOptions);
                     moveEl.value = randomChoice(moveOptions);
-                    nextEl.value = (i === haltRuleIndex) ? 'H' : randomChoice(nextStateOptions);
+                    nextEl.value = (i === haltRuleIndex) ? 'S' : randomChoice(nextStateOptions);
                } else {
                     console.warn(`Could not find elements for rule ID: ${id} during randomization.`);
                }
