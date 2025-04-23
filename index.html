@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Switch n' Slide</title>
+  <title>Switch 'n Slide</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -180,7 +180,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>Switch n' Slide</h1>
+    <h1>Switch 'n Slide</h1>
 
     <div class="level-selector">
       <strong>Level:</strong>
@@ -225,7 +225,7 @@
     let currentLevel = 3;
 
     const symbols = ['O', 'X'];
-    const moveOptions = ['L', 'R'];
+    const moveOptions = ['Left', 'Right'];
     const cellWidth = 28; // Cell width
     const cellMargin = 2; // Total margin (1px left + 1px right)
     const cellTotalWidth = cellWidth + cellMargin; // 30
@@ -243,7 +243,7 @@
         targetSteps = level;
 
         const goalText = document.getElementById('goal');
-        goalText.textContent = `Goal: Define rules that slide the tape exactly ${targetSteps} time${targetSteps !== 1 ? 's' : ''}.`;
+        goalText.textContent = `Goal: Define rules that slide the tape exactly ${targetSteps} time${targetSteps !== 1 ? 'Stop' : ''}.`;
 
         buildUI();
         initializeTape();
@@ -287,8 +287,8 @@
           const moveSel = createDropdown(moveOptions, `${state}${symbol}-move`);
           ruleDiv.appendChild(moveSel);
 
-          ruleDiv.appendChild(document.createTextNode(" Switch to Mode "));
-          const nextSel = createDropdown([...nextStateOptions, 'S'], `${state}${symbol}-next`);
+          ruleDiv.appendChild(document.createTextNode(" Switch "));
+          const nextSel = createDropdown([...nextStateOptions, 'Stop'], `${state}${symbol}-next`);
           ruleDiv.appendChild(nextSel);
 
           container.appendChild(ruleDiv);
@@ -302,7 +302,7 @@
 
        if (!moveEl || !nextEl) {
            console.error(`Rule elements not found for state ${state}, symbol ${symbol}`);
-           return { write: 'X', move: 'R', next: state };
+           return { write: 'X', move: 'Right', next: state };
        }
       return { write: 'X', move: moveEl.value, next: nextEl.value };
     }
@@ -419,11 +419,11 @@
         if (!isRunning) return;
         const result = document.getElementById('result');
 
-        if (state === 'S' || steps > maxSteps) {
-           if (state === 'S' && steps === maxSteps) {
+        if (state === 'Stop' || steps > maxSteps) {
+           if (state === 'Stop' && steps === maxSteps) {
                 result.textContent = `Success! You slid exactly ${steps} time(s).`;
                 result.className = 'success';
-            } else if (state === 'S' && steps < maxSteps) {
+            } else if (state === 'Stop' && steps < maxSteps) {
                  result.textContent = `Fail! You stopped sliding too early.`;
                  result.className = 'failure';
             } else {
@@ -438,7 +438,7 @@
         const rule = getRule(state, currentSymbol);
 
         tape[headPosition] = rule.write;
-        headPosition += rule.move === 'R' ? 1 : -1;
+        headPosition += rule.move === 'Right' ? 1 : -1;
         state = rule.next;
         steps++;
 
