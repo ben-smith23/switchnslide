@@ -13,6 +13,22 @@
       color: #334155;
       line-height: 1.5;
     }
+    button {
+      background: #3b82f6; /* lighter blue */
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 0 0.5rem;
+      transition: background 0.2s;
+      min-width: 80px; /* standard width for consistent sizing */
+      text-align: center;
+    }
+    button:hover {
+      background: #2563eb;
+    }
     .container {
       margin: 0 auto;
       background: white;
@@ -216,107 +232,102 @@
     </div>
     </div>
 
-  <script>
-    // --- Game Configuration ---
-    let numStates = 2;
-    let states = ['A', 'B'];
-    let nextStateOptions = ['Yes', 'No'];
-    let targetSteps = 3; // Default level 3
-    let currentLevel = 3;
-
-    const symbols = ['O', 'X'];
-    const moveOptions = ['Left', 'Right'];
-    const cellWidth = 28; // Cell width
-    const cellMargin = 2; // Total margin (1px left + 1px right)
-    const cellTotalWidth = cellWidth + cellMargin; // 30
-
-    // --- Machine Execution Globals ---
-    let isRunning = false;
-    let machineTimeout = null;
-    let currentTape = {};
-    let currentHeadPosition = 0;
-
-    // --- Setup ---
-    function setupGame(level) {
-        stopMachine();
-        currentLevel = level;
-        targetSteps = level;
-
-        const goalText = document.getElementById('goal');
-        goalText.innerHTML = `Goal: Define rules that slide the tape exactly ${targetSteps} time${targetSteps !== 1 ? 's' : ''}.<br>The tape will be marked with X as you slide past.`;
-
-        buildUI();
-        initializeTape();
-        resetMachine();
-    }
-
-    function createDropdown(options, id) {
-      const select = document.createElement('select');
-      select.id = id;
-      
-      for (const option of options) {
-        const opt = document.createElement('option');
-        opt.value = option;
-        opt.textContent = option;
-        select.appendChild(opt);
+    <script>
+      // --- Game Configuration ---
+      let numStates = 2;
+      let states = ['A', 'B'];
+      let nextStateOptions = ['Yes', 'No'];
+      let targetSteps = 3; // Default level 3
+      let currentLevel = 3;
+  
+      const symbols = ['O', 'X'];
+      const moveOptions = ['Left', 'Right'];
+      const cellWidth = 28;
+      const cellMargin = 2;
+      const cellTotalWidth = cellWidth + cellMargin;
+  
+      let isRunning = false;
+      let machineTimeout = null;
+      let currentTape = {};
+      let currentHeadPosition = 0;
+  
+      function setupGame(level) {
+          stopMachine();
+          currentLevel = level;
+          targetSteps = level;
+  
+          const goalText = document.getElementById('goal');
+          goalText.innerHTML = `Goal: Define rules that slide the tape exactly ${targetSteps} time${targetSteps !== 1 ? 's' : ''}.<br>The tape will be marked with X as you slide past.`;
+  
+          buildUI();
+          initializeTape();
+          resetMachine();
       }
-      return select;
-    }
-
-    function buildUI() {
-      const container = document.getElementById('rules');
-      if (!container) {
-          console.error("Rules container not found!");
-          return;
-      }
-      container.innerHTML = '';
-      
-      for (const state of states) {
-        for (const symbol of symbols) {
-          const ruleDiv = document.createElement('div');
-          ruleDiv.className = 'rule';
-
-          const ruleLabel = document.createElement('div');
-          ruleLabel.className = 'rule-label';
-          ruleLabel.textContent = `If Mode is ${state} and Tape is ${symbol}:`;
-          ruleDiv.appendChild(ruleLabel);
-
-          // Always mark X (removed mark dropdown)
-
-          ruleDiv.appendChild(document.createTextNode("Slide "));
-          const moveSel = createDropdown(moveOptions, `${state}${symbol}-move`);
-          ruleDiv.appendChild(moveSel);
-
-          ruleDiv.appendChild(document.createTextNode(" Switch Mode? "));
-          const nextSel = createDropdown([...nextStateOptions, 'Stop'], `${state}${symbol}-next`);
-          ruleDiv.appendChild(nextSel);
-
-          container.appendChild(ruleDiv);
+  
+      function buildUI() {
+        const container = document.getElementById('rules');
+        container.innerHTML = '';
+  
+        for (const state of states) {
+          for (const symbol of symbols) {
+            const ruleDiv = document.createElement('div');
+            ruleDiv.className = 'rule';
+  
+            const ruleLabel = document.createElement('div');
+            ruleLabel.className = 'rule-label';
+            ruleLabel.textContent = `If Mode is ${state} and Tape is ${symbol}:`;
+            ruleDiv.appendChild(ruleLabel);
+  
+            ruleDiv.appendChild(document.createTextNode("Slide "));
+  
+            const moveBtn = document.createElement('button');
+            moveBtn.textContent = 'Left';
+            moveBtn.id = `${state}${symbol}-move`;
+            moveBtn.onclick = () => {
+                moveBtn.textContent = moveBtn.textContent === 'Left' ? 'Right' : 'Left';
+            };
+            ruleDiv.appendChild(moveBtn);
+  
+            ruleDiv.appendChild(document.createTextNode(" Switch Mode? "));
+  
+            const nextOptions = ['Yes', 'No', 'Stop'];
+            let nextIndex = 0;
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = nextOptions[nextIndex];
+            nextBtn.id = `${state}${symbol}-next`;
+            nextBtn.onclick = () => {
+                nextIndex = (nextIndex + 1) % nextOptions.length;
+                nextBtn.textContent = nextOptions[nextIndex];
+            };
+            ruleDiv.appendChild(nextBtn);
+  
+            container.appendChild(ruleDiv);
+          }
         }
       }
-    }
-
-    function getRule(state, symbol) {
-      const moveEl = document.getElementById(`${state}${symbol}-move`);
-      const nextEl = document.getElementById(`${state}${symbol}-next`);
-
-       if (!moveEl || !nextEl) {
-           console.error(`Rule elements not found for state ${state}, symbol ${symbol}`);
-           return { write: 'X', move: 'Right', next: state };
-       }
-       let nextVal = nextEl.value;
-       let resolvedNext;
-
-       if (nextVal === 'Stop') {
-           resolvedNext = 'Stop';
-       } else if (nextVal === 'Yes') {
-           resolvedNext = state === 'A' ? 'B' : 'A';
-       } else {
-          resolvedNext = state;
-       }
-
-       return { write: 'X', move: moveEl.value, next: resolvedNext };
-    }
+  
+      function getRule(state, symbol) {
+        const moveEl = document.getElementById(`${state}${symbol}-move`);
+        const nextEl = document.getElementById(`${state}${symbol}-next`);
+  
+        if (!moveEl || !nextEl) {
+            console.error(`Rule elements not found for state ${state}, symbol ${symbol}`);
+            return { write: 'X', move: 'Right', next: state };
+        }
+  
+        let nextVal = nextEl.textContent;
+        let resolvedNext;
+  
+        if (nextVal === 'Stop') {
+            resolvedNext = 'Stop';
+        } else if (nextVal === 'Yes') {
+            resolvedNext = state === 'A' ? 'B' : 'A';
+        } else {
+           resolvedNext = state;
+        }
+  
+        return { write: 'X', move: moveEl.textContent, next: resolvedNext };
+      }
 
     // --- Tape Visualization ---
     function initializeTape() {
