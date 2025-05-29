@@ -174,7 +174,7 @@ body {
   }
   button:disabled {
     background-color: #e0e0e0; /* Lighter grey background */
-    color: #a0a0a0;          /* Dimmer text color */
+    color: #696969;          /* Dimmer text color */
     cursor: not-allowed;     /* Indicate non-interactive */
     border-color: #c0c0c0;   /* Lighter border */
 }
