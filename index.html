@@ -14,9 +14,9 @@
 
     <div class="level-selector">
       <strong>Level:</strong>
-      <label><input type="radio" name="level" value="1" onclick="setupGame(1)"> 1</label>
+      <label><input type="radio" name="level" value="1" onclick="setupGame(1)" checked> 1</label>
       <label><input type="radio" name="level" value="2" onclick="setupGame(2)"> 2</label>
-      <label><input type="radio" name="level" value="3" onclick="setupGame(3)" checked> 3</label>
+      <label><input type="radio" name="level" value="3" onclick="setupGame(3)"> 3</label>
       <label><input type="radio" name="level" value="4" onclick="setupGame(4)"> 4</label>
       <label><input type="radio" name="level" value="5" onclick="setupGame(5)"> 5</label>
       <label><input type="radio" name="level" value="6" onclick="setupGame(6)"> 6</label>
@@ -290,7 +290,7 @@
 
     // Initialize when page loads
     window.onload = () => {
-        const defaultLevel = 3;
+        const defaultLevel = 1;
         const radio = document.querySelector(`input[name="level"][value="${defaultLevel}"]`);
         if (radio) radio.checked = true;
         setupGame(defaultLevel);
