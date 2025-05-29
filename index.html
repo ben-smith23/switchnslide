@@ -15,7 +15,6 @@
       <label><input type="radio" name="level" value="2" onclick="setupGame(2)"> 2</label>
       <label><input type="radio" name="level" value="3" onclick="setupGame(3)"> 3</label>
       <label><input type="radio" name="level" value="4" onclick="setupGame(4)"> 4</label>
-      <label><input type="radio" name="level" value="5" onclick="setupGame(5)"> 5</label>
     </div>
 
     <p id="goal">Goal: Slide the Cell Tape exactly N times.</p>
@@ -51,7 +50,7 @@
       let numStates = 2;
       let states = ['A', 'B'];
       let nextStateOptionsText = ['Yes', 'No', 'Stop'];
-      let targetSteps = 2; // Default for new Level 1 (level 1 + 1)
+      let targetSteps = 3; // Default for new Level 1 (level 1 + 1)
       let currentLevel = 1; // Default to new Level 1
   
       const symbols = ['O', 'X'];
@@ -68,14 +67,13 @@
       function setupGame(level) {
           stopMachine();
           currentLevel = level;
-          targetSteps = level + 1; // New Level 1 -> 2 slides, Level 2 -> 3 slides, etc.
+          targetSteps = level + 2; // New Level 1 -> 2 slides, Level 2 -> 3 slides, etc.
   
           const goalText = document.getElementById('goal');
           goalText.innerHTML = `
   <strong>Goals:</strong><br>
   1. Figure out the rules.<br>
   2. Slide the Cell Tape exactly <strong>${targetSteps}</strong> times.<br>
-  3. Submit the answer form.
 `;
 
   
