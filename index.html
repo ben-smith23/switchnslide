@@ -15,6 +15,8 @@
       <label><input type="radio" name="level" value="2" onclick="setupGame(2)"> 2</label>
       <label><input type="radio" name="level" value="3" onclick="setupGame(3)"> 3</label>
       <label><input type="radio" name="level" value="4" onclick="setupGame(4)"> 4</label>
+      <label><input type="radio" name="level" value="5" onclick="setupGame(5)"> 5</label>
+      <label><input type="radio" name="level" value="6" onclick="setupGame(6)"> 6</label>
     </div>
 
     <p id="goal">Goal: Slide the Cell Tape exactly N times.</p>
@@ -50,7 +52,7 @@
       let numStates = 2;
       let states = ['A', 'B'];
       let nextStateOptionsText = ['Yes', 'No', 'Stop'];
-      let targetSteps = 3; // Default for new Level 1 (level 1 + 1)
+      let targetSteps = 1; // Default for new Level 1 (level 1 + 1)
       let currentLevel = 1; // Default to new Level 1
   
       const symbols = ['O', 'X'];
@@ -67,13 +69,13 @@
       function setupGame(level) {
           stopMachine();
           currentLevel = level;
-          targetSteps = level + 2; // New Level 1 -> 2 slides, Level 2 -> 3 slides, etc.
+          targetSteps = level + 0; // New Level 1 -> 2 slides, Level 2 -> 3 slides, etc.
   
           const goalText = document.getElementById('goal');
           goalText.innerHTML = `
   <strong>Goals:</strong><br>
   1. Figure out the rules.<br>
-  2. Slide the Cell Tape exactly <strong>${targetSteps}</strong> times.<br>
+  2. Slide the Cell Tape exactly <strong>${targetSteps}</strong> times.
 `;
 
   
@@ -125,25 +127,25 @@
           nextCell.appendChild(nextBtn);
           row.appendChild(nextCell);
 
+          const DISABLE_RULES = false; // Set to true when you want to lock specific rules
+
           // Logic for fixed/variable behavior
-          if (state === 'A' && symbol === 'O') {
+          if (DISABLE_RULES && state === 'A' && symbol === 'O') {
             moveBtn.textContent = 'Left';
             moveBtn.disabled = true;
             nextBtn.textContent = 'Yes';
             nextBtn.disabled = true;
-          } else if (state === 'B' && symbol === 'O') {
+
+          } else if (DISABLE_RULES && state === 'B' && symbol === 'O') {
             moveBtn.textContent = 'Right';
             moveBtn.disabled = true;
-            nextBtn.textContent = 'Yes';
-            nextBtn.disabled = true;
 
             let nextIndex = 0;
             nextBtn.textContent = nextStateOptionsText[nextIndex];
-            nextBtn.onclick = () => {
-              nextIndex = (nextIndex + 1) % nextStateOptionsText.length;
-              nextBtn.textContent = nextStateOptionsText[nextIndex];
-            };
+            nextBtn.disabled = true;
+
           } else {
+            // All states are fully configurable
             moveBtn.textContent = 'Left';
             moveBtn.onclick = () => {
               moveBtn.textContent = moveBtn.textContent === 'Left' ? 'Right' : 'Left';
@@ -157,6 +159,8 @@
             };
           }
 
+
+
           table.appendChild(row);
         }
 
@@ -165,49 +169,54 @@
 
   
       function getRule(state, symbol) {
-        if (state === 'A' && symbol === 'O') {
-          return { write: 'X', move: 'Left', next: 'B' }; // 'B' is the state after 'A'
-        } else if (state === 'B' && symbol === 'O') {
-          // Mode B, Tape O: Move is fixed to Right, Next is determined by its button
+        const DISABLE_RULES = false; // Match UI setting
+
+        if (DISABLE_RULES && state === 'A' && symbol === 'O') {
+          return { write: 'X', move: 'Left', next: 'B' };
+        } 
+        
+        if (DISABLE_RULES && state === 'B' && symbol === 'O') {
           const nextEl = document.getElementById(`BO-next`);
           if (!nextEl) {
             console.error(`Rule element BO-next not found`);
             return { write: 'X', move: 'Right', next: state }; // Fallback
           }
-          let nextValText = nextEl.textContent;
+          const nextValText = nextEl.textContent;
           let resolvedNext;
           if (nextValText === 'Stop') {
             resolvedNext = 'Stop';
           } else if (nextValText === 'Yes') {
-            resolvedNext = state === 'A' ? 'B' : 'A'; // If current is B, switch to A
-          } else { // 'No'
-            resolvedNext = state; // Stay in B
+            resolvedNext = 'A';
+          } else {
+            resolvedNext = state;
           }
           return { write: 'X', move: 'Right', next: resolvedNext };
         }
 
-        // For fully editable rules
+        // Editable behavior for all other cases
         const moveEl = document.getElementById(`${state}${symbol}-move`);
         const nextEl = document.getElementById(`${state}${symbol}-next`);
-  
+
         if (!moveEl || !nextEl) {
-            console.error(`Rule elements not found for state ${state}, symbol ${symbol}`);
-            return { write: 'X', move: 'Right', next: state }; 
+          console.error(`Rule elements not found for state ${state}, symbol ${symbol}`);
+          return { write: 'X', move: 'Right', next: state };
         }
-  
-        let nextValText = nextEl.textContent;
+
+        const move = moveEl.textContent;
+        const nextValText = nextEl.textContent;
         let resolvedNext;
-  
+
         if (nextValText === 'Stop') {
-            resolvedNext = 'Stop';
+          resolvedNext = 'Stop';
         } else if (nextValText === 'Yes') {
-            resolvedNext = state === 'A' ? 'B' : 'A';
-        } else { // 'No'
-           resolvedNext = state;
+          resolvedNext = state === 'A' ? 'B' : 'A';
+        } else {
+          resolvedNext = state;
         }
-  
-        return { write: 'X', move: moveEl.textContent, next: resolvedNext };
+
+        return { write: 'X', move, next: resolvedNext };
       }
+
 
     // --- Tape Visualization ---
     function initializeTape() {
@@ -223,8 +232,8 @@
       tapeInner.innerHTML = '';
       tapeInner.style.transform = 'translateX(0px)';
 
-      const numVisibleCells = 7;
-      const currentTargetSteps = 3;
+      const numVisibleCells = 13;
+      const currentTargetSteps = 6;
       const tapeWidth = numVisibleCells * cellTotalWidth;
 
       tapeContainer.style.width = `${tapeWidth}px`;
