@@ -68,11 +68,13 @@
           targetSteps = level + 1; // New Level 1 -> 2 slides, Level 2 -> 3 slides, etc.
   
           const goalText = document.getElementById('goal');
-          goalText.innerHTML = `Goal: Slide the Cell Tape exactly ${targetSteps} times.`;goalText.innerHTML = `
-          <strong>Goals:</strong><br>
-          1. Figure out the rules.<br>
-          2. Slide the Cell Tape exactly <strong>${targetSteps}</strong> times.
-        `;
+          goalText.innerHTML = `
+  <strong>Goals:</strong><br>
+  1. Figure out the rules.<br>
+  2. Slide the Cell Tape exactly <strong>${targetSteps}</strong> times.<br>
+  3. Submit the answer form.
+`;
+
   
           buildUI();
           initializeTape();
@@ -387,5 +389,19 @@
         setupGame(defaultLevel); 
     };
   </script>
+
+<div id="feedback-form" style="margin-top: 40px;">
+  <hr style="margin: 40px 0; border: none; border-top: 2px solid #ccc;">
+  <iframe 
+    src="https://docs.google.com/forms/d/e/1FAIpQLSc9UBv9PCJhUMgeR3zUJcpT0BjqTikkVCVX_iPcNzOV2IqJoQ/viewform?embedded=true"
+    width="100%" 
+    height="1875" 
+    frameborder="0" 
+    marginheight="0" 
+    marginwidth="0"
+    style="border: none;">
+  </iframe>
+</div>
+
 </body>
 </html>
