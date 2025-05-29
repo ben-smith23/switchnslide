@@ -68,7 +68,11 @@
           targetSteps = level + 1; // New Level 1 -> 2 slides, Level 2 -> 3 slides, etc.
   
           const goalText = document.getElementById('goal');
-          goalText.innerHTML = `Goal: Slide the Cell Tape exactly ${targetSteps} times.`;
+          goalText.innerHTML = `Goal: Slide the Cell Tape exactly ${targetSteps} times.`;goalText.innerHTML = `
+          <strong>Goals:</strong><br>
+          1. Figure out the rules.<br>
+          2. Slide the Cell Tape exactly <strong>${targetSteps}</strong> times.
+        `;
   
           buildUI();
           initializeTape();
