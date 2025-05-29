@@ -84,20 +84,6 @@ body {
     border-color: #3b82f6;
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
   }
-  button {
-    background: #2563eb;
-    color: white;
-    border: none;
-    padding: 0.6rem 1.2rem;
-    font-size: 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    margin: 0 0.5rem;
-    transition: background 0.2s;
-  }
-  button:hover {
-    background: #1d4ed8;
-  }
   #result {
     margin-top: 1.5rem;
     font-size: 1.2rem;
@@ -111,7 +97,7 @@ body {
     color: #dc2626;
   }
   #tape {
-    margin: 3rem auto 1rem;
+    margin: 2rem auto 1rem;
     font-family: monospace;
     position: relative;
   }
@@ -177,7 +163,7 @@ body {
     font-size: 1.1rem;
     margin-top: 1rem;
     font-weight: 500;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
   }
   .current-state {
     display: inline-block;
@@ -193,3 +179,20 @@ body {
     border-color: #c0c0c0;   /* Lighter border */
 }
 .rule button { margin: 0 5px; }
+#rules {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px; /* optional spacing */
+  }
+  
+  .rules-table {
+    border-collapse: collapse;
+  }
+  
+  .rules-table th,
+  .rules-table td {
+    border: 1px solid #ccc;
+    padding: 8px 12px;
+    text-align: center;
+  }
+  

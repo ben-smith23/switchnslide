@@ -18,10 +18,10 @@
       <label><input type="radio" name="level" value="5" onclick="setupGame(5)"> 5</label>
     </div>
 
-    <p id="goal">Goal: Define rules that slide the tape exactly N times.</p>
+    <p id="goal">Goal: Set instructions that slide the Cell Tape exactly N times.</p>
 
     <div class="rules-container">
-      <div class="rule-header">Rules:</div>
+      <div class="rule-header">Instructions:</div>
       <div id="rules"></div>
     </div>
 
@@ -30,16 +30,17 @@
     </div>
 
     <div id="result"></div>
-    <div class="step-counter">Slides: <span id="stepCount">0</span></div>
-    <div class="state-indicator">Current Mode: <span id="currentState" class="current-state">A</span></div>
-
-    <div id="tape">
+    <div class="step-counter">Slide Count: <span id="stepCount">0</span></div>
+    <div class="state-indicator">Mode: <span id="currentState" class="current-state">A</span></div>
+    
+    <div class="tape-indicator">
+      <div id="tape">
         <div id="tape-container" class="tape-container">
           <div id="tape-wrapper" class="tape-wrapper">
             <div id="tape-inner" class="tape-inner"></div>
           </div>
         </div>
-    </div>
+      </div>    
     </div>
 
     <script>
@@ -67,7 +68,7 @@
           targetSteps = level + 1; // New Level 1 -> 2 slides, Level 2 -> 3 slides, etc.
   
           const goalText = document.getElementById('goal');
-          goalText.innerHTML = `Goal: Define rules that slide the tape exactly ${targetSteps} time${targetSteps !== 1 ? 's' : ''}.<br>The tape will be marked with X as you slide past.`;
+          goalText.innerHTML = `Goal: Set instructions that slide the Cell Tape exactly ${targetSteps} times. <br>Cells are marked with X as you slide past.`;
   
           buildUI();
           initializeTape();
@@ -77,65 +78,82 @@
       function buildUI() {
         const container = document.getElementById('rules');
         container.innerHTML = '';
-  
-        for (const state of states) {
-          for (const symbol of symbols) {
-            const ruleDiv = document.createElement('div');
-            ruleDiv.className = 'rule';
-  
-            const ruleLabel = document.createElement('div');
-            ruleLabel.className = 'rule-label';
-            ruleLabel.textContent = `If Mode is ${state} and Tape is ${symbol}:`;
-            ruleDiv.appendChild(ruleLabel);
-  
-            ruleDiv.appendChild(document.createTextNode("Slide "));
-  
-            const moveBtn = document.createElement('button');
-            moveBtn.id = `${state}${symbol}-move`;
-            ruleDiv.appendChild(moveBtn);
-  
-            ruleDiv.appendChild(document.createTextNode(" Switch Mode? "));
-  
-            const nextBtn = document.createElement('button');
-            nextBtn.id = `${state}${symbol}-next`;
-            ruleDiv.appendChild(nextBtn);
 
-            if (state === 'A' && symbol === 'O') {
-                // Hardcoded rule: Mode A, Tape O -> Move Left, Switch Mode (Yes)
-                moveBtn.textContent = 'Left';
-                moveBtn.disabled = true;
-                nextBtn.textContent = 'Yes';
-                nextBtn.disabled = true;
-            } else if (state === 'B' && symbol === 'O') {
-                // Partially fixed rule: Mode B, Tape O -> Move Right (fixed), Switch Mode (editable)
-                moveBtn.textContent = 'Right';
-                moveBtn.disabled = true;
+        const table = document.createElement('table');
+        table.className = 'rules-table';
 
-                // Switch Mode button remains editable for B/O
-                let nextIndex = 0; // Default to 'Yes' for B/O's switch option
-                nextBtn.textContent = nextStateOptionsText[nextIndex];
-                nextBtn.onclick = () => {
-                    nextIndex = (nextIndex + 1) % nextStateOptionsText.length;
-                    nextBtn.textContent = nextStateOptionsText[nextIndex];
-                };
-            } else {
-                // Default setup for other fully editable rules
-                moveBtn.textContent = 'Left'; // Default move
-                moveBtn.onclick = () => {
-                    moveBtn.textContent = moveBtn.textContent === 'Left' ? 'Right' : 'Left';
-                };
+        // Create header row
+        const headerRow = document.createElement('tr');
+        ['Mode | Cell', 'Slide', 'Switch'].forEach(headerText => {
+          const th = document.createElement('th');
+          th.textContent = headerText;
+          headerRow.appendChild(th);
+        });
+        table.appendChild(headerRow);
 
-                let nextIndex = 0; // Default to 'Yes'
-                nextBtn.textContent = nextStateOptionsText[nextIndex];
-                nextBtn.onclick = () => {
-                    nextIndex = (nextIndex + 1) % nextStateOptionsText.length;
-                    nextBtn.textContent = nextStateOptionsText[nextIndex];
-                };
-            }
-            container.appendChild(ruleDiv);
+        // Desired order: Tape O then Tape X, and within each: Mode A then Mode B
+        const desiredOrder = [];
+        for (const symbol of symbols) {
+          for (const state of states) {
+            desiredOrder.push({ state, symbol });
           }
         }
+
+        for (const { state, symbol } of desiredOrder) {
+          const row = document.createElement('tr');
+
+          const conditionCell = document.createElement('td');
+          conditionCell.textContent = `${state} | ${symbol}`;
+          row.appendChild(conditionCell);
+
+          const moveCell = document.createElement('td');
+          const moveBtn = document.createElement('button');
+          moveBtn.id = `${state}${symbol}-move`;
+          moveCell.appendChild(moveBtn);
+          row.appendChild(moveCell);
+
+          const nextCell = document.createElement('td');
+          const nextBtn = document.createElement('button');
+          nextBtn.id = `${state}${symbol}-next`;
+          nextCell.appendChild(nextBtn);
+          row.appendChild(nextCell);
+
+          // Logic for fixed/variable behavior
+          if (state === 'A' && symbol === 'O') {
+            moveBtn.textContent = 'Left';
+            moveBtn.disabled = true;
+            nextBtn.textContent = 'Yes';
+            nextBtn.disabled = true;
+          } else if (state === 'B' && symbol === 'O') {
+            moveBtn.textContent = 'Right';
+            moveBtn.disabled = true;
+
+            let nextIndex = 0;
+            nextBtn.textContent = nextStateOptionsText[nextIndex];
+            nextBtn.onclick = () => {
+              nextIndex = (nextIndex + 1) % nextStateOptionsText.length;
+              nextBtn.textContent = nextStateOptionsText[nextIndex];
+            };
+          } else {
+            moveBtn.textContent = 'Left';
+            moveBtn.onclick = () => {
+              moveBtn.textContent = moveBtn.textContent === 'Left' ? 'Right' : 'Left';
+            };
+
+            let nextIndex = 0;
+            nextBtn.textContent = nextStateOptionsText[nextIndex];
+            nextBtn.onclick = () => {
+              nextIndex = (nextIndex + 1) % nextStateOptionsText.length;
+              nextBtn.textContent = nextStateOptionsText[nextIndex];
+            };
+          }
+
+          table.appendChild(row);
+        }
+
+        container.appendChild(table);
       }
+
   
       function getRule(state, symbol) {
         if (state === 'A' && symbol === 'O') {
@@ -196,8 +214,8 @@
       tapeInner.innerHTML = '';
       tapeInner.style.transform = 'translateX(0px)';
 
-      const currentTargetSteps = Math.max(1, targetSteps); // Ensure at least 1 for calculation
-      const numVisibleCells = 2 * currentTargetSteps + 1; // e.g. targetSteps=2 -> 5 cells
+      const numVisibleCells = 7;
+      const currentTargetSteps = 3;
       const tapeWidth = numVisibleCells * cellTotalWidth;
 
       tapeContainer.style.width = `${tapeWidth}px`;
@@ -315,25 +333,8 @@
       function step() {
         if (!isRunning) return;
         const result = document.getElementById('result');
-
-        if (state === 'Stop') {
-            if (steps === maxSteps) {
-                result.textContent = `Success! You slid exactly ${steps} time${steps !== 1 ? 's' : ''}.`;
-                result.className = 'success';
-            } else { 
-                 result.textContent = `Fail! You stopped at ${steps} slide${steps !== 1 ? 's' : ''}. Goal was ${maxSteps}.`;
-                 result.className = 'failure';
-            }
-            stopMachine();
-            return;
-        }
-
-        if (steps >= maxSteps) { 
-            result.textContent = `Fail! You slid ${steps} times (max ${maxSteps}) without stopping correctly.`;
-            result.className = 'failure';
-            stopMachine();
-            return;
-        }
+        result.textContent = '';
+        result.className = ''; // Remove success/failure class
 
         const currentSymbol = tape[headPosition] || 'O';
         const rule = getRule(state, currentSymbol);
@@ -347,26 +348,29 @@
         document.getElementById('currentState').textContent = state;
         updateTape(tape, headPosition);
 
-        // Check win/loss conditions after the step's actions
-        if (state === 'Stop') { // Machine was told to stop by the rule
+        if (state === 'Stop') {
             if (steps === maxSteps) {
-                result.textContent = `Success! You slid exactly ${steps} time${steps !== 1 ? 's' : ''}.`;
+                result.textContent = `Success!`;
                 result.className = 'success';
-            } else { // Stopped, but not at the target number of steps
-                result.textContent = `Fail! You stopped at ${steps} slide${steps !== 1 ? 's' : ''}. Goal was ${maxSteps}.`;
+            } else {
+                result.textContent = `Fail!`;
                 result.className = 'failure';
             }
             stopMachine();
             return;
-        } else if (steps === maxSteps && state !== 'Stop') { // Reached target steps, but machine didn't stop
-            result.textContent = `Fail! Machine did not stop after ${maxSteps} slide${maxSteps !== 1 ? 's' : ''}.`;
+        }
+
+        if (steps >= maxSteps) {
+            result.textContent = `Fail!`;
             result.className = 'failure';
             stopMachine();
             return;
         }
-        machineTimeout = setTimeout(step, 350); 
-      }
-      step();
+
+        machineTimeout = setTimeout(step, 350);
+    }
+    step();
+
     }
 
     // Initialize when page loads
