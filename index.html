@@ -16,7 +16,6 @@
       <label><input type="radio" name="level" value="3" onclick="setupGame(3)"> 3</label>
       <label><input type="radio" name="level" value="4" onclick="setupGame(4)"> 4</label>
       <label><input type="radio" name="level" value="5" onclick="setupGame(5)"> 5</label>
-      <label><input type="radio" name="level" value="6" onclick="setupGame(6)"> 6</label>
     </div>
 
     <p id="goal">Goal: Slide the Cell Tape exactly N times.</p>
@@ -45,362 +44,433 @@
     <div id="result"></div>
     <div class="step-counter">Slide Count: <span id="stepCount">0</span></div>
     
-
-
     <script>
-      // --- Game Configuration ---
-      let numStates = 2;
-      let states = ['A', 'B'];
-      let nextStateOptionsText = ['Yes', 'No', 'Stop'];
-      let targetSteps = 1; // Default for new Level 1 (level 1 + 1)
-      let currentLevel = 1; // Default to new Level 1
-  
-      const symbols = ['O', 'X'];
-      const moveOptions = ['Left', 'Right']; // Not directly used for button cycle anymore for fixed ones
-      const cellWidth = 28;
-      const cellMargin = 2;
-      const cellTotalWidth = cellWidth + cellMargin;
-  
-      let isRunning = false;
-      let machineTimeout = null;
-      let currentTape = {};
-      let currentHeadPosition = 0;
-  
-      function setupGame(level) {
-          stopMachine();
-          currentLevel = level;
-          targetSteps = level + 0; // New Level 1 -> 2 slides, Level 2 -> 3 slides, etc.
-  
-          const goalText = document.getElementById('goal');
-          goalText.innerHTML = `
-  <strong>Goals:</strong><br>
-  1. Figure out the rules.<br>
-  2. Slide the Cell Tape exactly <strong>${targetSteps}</strong> times.
-`;
+      // === CONSTANTS ===
+      const CONSTANTS = {
+        CELL_WIDTH: 28,
+        CELL_MARGIN: 2,
+        NUM_VISIBLE_CELLS: 13,
+        STEP_DELAY: 350,
+        SYMBOLS: ['O', 'X'],
+        STATES: ['A', 'B'],
+        MOVE_OPTIONS: ['Left', 'Right'],
+        NEXT_STATE_OPTIONS: ['Yes', 'No', 'Stop'],
+        DISABLE_RULES: false
+      };
 
-  
-          buildUI();
-          initializeTape();
-          resetMachine();
+      // === GAME STATE ===
+      const GameState = {
+        numStates: 2,
+        states: CONSTANTS.STATES,
+        targetSteps: 2,
+        currentLevel: 1,
+        isRunning: false,
+        machineTimeout: null,
+        currentTape: {},
+        currentHeadPosition: 0,
+        
+        // Cached DOM elements
+        elements: {}
+      };
+
+      // === DOM CACHE ===
+      function initializeDOMCache() {
+        GameState.elements = {
+          goal: document.getElementById('goal'),
+          rules: document.getElementById('rules'),
+          currentState: document.getElementById('currentState'),
+          result: document.getElementById('result'),
+          stepCount: document.getElementById('stepCount'),
+          tapeContainer: document.getElementById('tape-container'),
+          tapeWrapper: document.getElementById('tape-wrapper'),
+          tapeInner: document.getElementById('tape-inner')
+        };
       }
-  
-      function buildUI() {
-        const container = document.getElementById('rules');
-        container.innerHTML = '';
 
+      // === UTILITY FUNCTIONS ===
+      const Utils = {
+        getCellTotalWidth: () => CONSTANTS.CELL_WIDTH + CONSTANTS.CELL_MARGIN,
+        
+        validateDOMElement: (element, name) => {
+          if (!element) {
+            console.error(`${name} element not found!`);
+            return false;
+          }
+          return true;
+        },
+
+        createTableHeader: () => {
+          const headerRow = document.createElement('tr');
+          ['Mode | Cell', 'Slide', 'Switch'].forEach(headerText => {
+            const th = document.createElement('th');
+            th.textContent = headerText;
+            headerRow.appendChild(th);
+          });
+          return headerRow;
+        },
+
+        getDesiredOrder: () => {
+          const order = [];
+          for (const symbol of CONSTANTS.SYMBOLS) {
+            for (const state of CONSTANTS.STATES) {
+              order.push({ state, symbol });
+            }
+          }
+          return order;
+        }
+      };
+
+      // === GAME SETUP ===
+      function setupGame(level) {
+        stopMachine();
+        GameState.currentLevel = level;
+        GameState.targetSteps = level + 1;
+
+        updateGoalText();
+        buildUI();
+        initializeTape();
+        resetMachine();
+      }
+
+      function updateGoalText() {
+        if (!Utils.validateDOMElement(GameState.elements.goal, 'Goal')) return;
+        
+        GameState.elements.goal.innerHTML = `
+          <strong>Goals:</strong><br>
+          1. Figure out the rules.<br>
+          2. Slide the Cell Tape exactly <strong>${GameState.targetSteps}</strong> times.
+        `;
+      }
+
+      // === UI BUILDING ===
+      function buildUI() {
+        if (!Utils.validateDOMElement(GameState.elements.rules, 'Rules')) return;
+        
+        GameState.elements.rules.innerHTML = '';
+        const table = createRulesTable();
+        GameState.elements.rules.appendChild(table);
+      }
+
+      function createRulesTable() {
         const table = document.createElement('table');
         table.className = 'rules-table';
-
-        // Create header row
-        const headerRow = document.createElement('tr');
-        ['Mode | Cell', 'Slide', 'Switch'].forEach(headerText => {
-          const th = document.createElement('th');
-          th.textContent = headerText;
-          headerRow.appendChild(th);
+        
+        table.appendChild(Utils.createTableHeader());
+        
+        const desiredOrder = Utils.getDesiredOrder();
+        desiredOrder.forEach(({ state, symbol }) => {
+          table.appendChild(createRuleRow(state, symbol));
         });
-        table.appendChild(headerRow);
-
-        // Desired order: Tape O then Tape X, and within each: Mode A then Mode B
-        const desiredOrder = [];
-        for (const symbol of symbols) {
-          for (const state of states) {
-            desiredOrder.push({ state, symbol });
-          }
-        }
-
-        for (const { state, symbol } of desiredOrder) {
-          const row = document.createElement('tr');
-
-          const conditionCell = document.createElement('td');
-          conditionCell.textContent = `${state} | ${symbol}`;
-          row.appendChild(conditionCell);
-
-          const moveCell = document.createElement('td');
-          const moveBtn = document.createElement('button');
-          moveBtn.id = `${state}${symbol}-move`;
-          moveCell.appendChild(moveBtn);
-          row.appendChild(moveCell);
-
-          const nextCell = document.createElement('td');
-          const nextBtn = document.createElement('button');
-          nextBtn.id = `${state}${symbol}-next`;
-          nextCell.appendChild(nextBtn);
-          row.appendChild(nextCell);
-
-          const DISABLE_RULES = false; // Set to true when you want to lock specific rules
-
-          // Logic for fixed/variable behavior
-          if (DISABLE_RULES && state === 'A' && symbol === 'O') {
-            moveBtn.textContent = 'Left';
-            moveBtn.disabled = true;
-            nextBtn.textContent = 'Yes';
-            nextBtn.disabled = true;
-
-          } else if (DISABLE_RULES && state === 'B' && symbol === 'O') {
-            moveBtn.textContent = 'Right';
-            moveBtn.disabled = true;
-
-            let nextIndex = 0;
-            nextBtn.textContent = nextStateOptionsText[nextIndex];
-            nextBtn.disabled = true;
-
-          } else {
-            // All states are fully configurable
-            moveBtn.textContent = 'Left';
-            moveBtn.onclick = () => {
-              moveBtn.textContent = moveBtn.textContent === 'Left' ? 'Right' : 'Left';
-            };
-
-            let nextIndex = 0;
-            nextBtn.textContent = nextStateOptionsText[nextIndex];
-            nextBtn.onclick = () => {
-              nextIndex = (nextIndex + 1) % nextStateOptionsText.length;
-              nextBtn.textContent = nextStateOptionsText[nextIndex];
-            };
-          }
-
-
-
-          table.appendChild(row);
-        }
-
-        container.appendChild(table);
+        
+        return table;
       }
 
-  
-      function getRule(state, symbol) {
-        const DISABLE_RULES = false; // Match UI setting
-
-        if (DISABLE_RULES && state === 'A' && symbol === 'O') {
-          return { write: 'X', move: 'Left', next: 'B' };
-        } 
+      function createRuleRow(state, symbol) {
+        const row = document.createElement('tr');
         
-        if (DISABLE_RULES && state === 'B' && symbol === 'O') {
-          const nextEl = document.getElementById(`BO-next`);
+        // Condition cell
+        const conditionCell = document.createElement('td');
+        conditionCell.textContent = `${state} | ${symbol}`;
+        row.appendChild(conditionCell);
+        
+        // Move cell
+        const moveCell = document.createElement('td');
+        const moveBtn = createButton(`${state}${symbol}-move`, 'Left', () => {
+          moveBtn.textContent = moveBtn.textContent === 'Left' ? 'Right' : 'Left';
+        });
+        moveCell.appendChild(moveBtn);
+        row.appendChild(moveCell);
+        
+        // Next state cell
+        const nextCell = document.createElement('td');
+        const nextBtn = createNextStateButton(state, symbol);
+        nextCell.appendChild(nextBtn);
+        row.appendChild(nextCell);
+        
+        // Apply fixed rules if needed
+        applyFixedRules(state, symbol, moveBtn, nextBtn);
+        
+        return row;
+      }
+
+      function createButton(id, text, clickHandler) {
+        const btn = document.createElement('button');
+        btn.id = id;
+        btn.textContent = text;
+        if (clickHandler) {
+          btn.onclick = clickHandler;
+        }
+        return btn;
+      }
+
+      function createNextStateButton(state, symbol) {
+        let nextIndex = 0;
+        const btn = createButton(`${state}${symbol}-next`, CONSTANTS.NEXT_STATE_OPTIONS[nextIndex], () => {
+          nextIndex = (nextIndex + 1) % CONSTANTS.NEXT_STATE_OPTIONS.length;
+          btn.textContent = CONSTANTS.NEXT_STATE_OPTIONS[nextIndex];
+        });
+        return btn;
+      }
+
+      function applyFixedRules(state, symbol, moveBtn, nextBtn) {
+        if (!CONSTANTS.DISABLE_RULES) return;
+        
+        if (state === 'A' && symbol === 'O') {
+          moveBtn.textContent = 'Left';
+          moveBtn.disabled = true;
+          nextBtn.textContent = 'Yes';
+          nextBtn.disabled = true;
+        } else if (state === 'B' && symbol === 'O') {
+          moveBtn.textContent = 'Right';
+          moveBtn.disabled = true;
+          nextBtn.textContent = CONSTANTS.NEXT_STATE_OPTIONS[0];
+          nextBtn.disabled = true;
+        }
+      }
+
+      // === RULE SYSTEM ===
+      function getRule(state, symbol) {
+        if (CONSTANTS.DISABLE_RULES) {
+          const fixedRule = getFixedRule(state, symbol);
+          if (fixedRule) return fixedRule;
+        }
+        
+        return getEditableRule(state, symbol);
+      }
+
+      function getFixedRule(state, symbol) {
+        if (state === 'A' && symbol === 'O') {
+          return { write: 'X', move: 'Left', next: 'B' };
+        }
+        
+        if (state === 'B' && symbol === 'O') {
+          const nextEl = document.getElementById('BO-next');
           if (!nextEl) {
-            console.error(`Rule element BO-next not found`);
-            return { write: 'X', move: 'Right', next: state }; // Fallback
+            console.error('Rule element BO-next not found');
+            return { write: 'X', move: 'Right', next: state };
           }
+          
           const nextValText = nextEl.textContent;
-          let resolvedNext;
-          if (nextValText === 'Stop') {
-            resolvedNext = 'Stop';
-          } else if (nextValText === 'Yes') {
-            resolvedNext = 'A';
-          } else {
-            resolvedNext = state;
-          }
+          const resolvedNext = resolveNextState(nextValText, state);
           return { write: 'X', move: 'Right', next: resolvedNext };
         }
+        
+        return null;
+      }
 
-        // Editable behavior for all other cases
+      function getEditableRule(state, symbol) {
         const moveEl = document.getElementById(`${state}${symbol}-move`);
         const nextEl = document.getElementById(`${state}${symbol}-next`);
-
+        
         if (!moveEl || !nextEl) {
           console.error(`Rule elements not found for state ${state}, symbol ${symbol}`);
           return { write: 'X', move: 'Right', next: state };
         }
-
+        
         const move = moveEl.textContent;
         const nextValText = nextEl.textContent;
-        let resolvedNext;
-
-        if (nextValText === 'Stop') {
-          resolvedNext = 'Stop';
-        } else if (nextValText === 'Yes') {
-          resolvedNext = state === 'A' ? 'B' : 'A';
-        } else {
-          resolvedNext = state;
-        }
-
+        const resolvedNext = resolveNextState(nextValText, state);
+        
         return { write: 'X', move, next: resolvedNext };
       }
 
-
-    // --- Tape Visualization ---
-    function initializeTape() {
-      const tapeContainer = document.getElementById('tape-container');
-      const tapeWrapper = document.getElementById('tape-wrapper');
-      const tapeInner = document.getElementById('tape-inner');
-
-      if (!tapeContainer || !tapeWrapper || !tapeInner) {
-          console.error("Tape elements not found during initialization!");
-          return;
+      function resolveNextState(nextValText, currentState) {
+        if (nextValText === 'Stop') return 'Stop';
+        if (nextValText === 'Yes') return currentState === 'A' ? 'B' : 'A';
+        return currentState;
       }
 
-      tapeInner.innerHTML = '';
-      tapeInner.style.transform = 'translateX(0px)';
-
-      const numVisibleCells = 13;
-      const currentTargetSteps = 6;
-      const tapeWidth = numVisibleCells * cellTotalWidth;
-
-      tapeContainer.style.width = `${tapeWidth}px`;
-      tapeWrapper.style.width = `${tapeWidth}px`;
-
-      for (let i = 0; i < numVisibleCells; i++) {
-        const cell = document.createElement('span');
-        cell.className = 'cell';
-        cell.textContent = 'O';
-        cell.setAttribute('data-index', i - currentTargetSteps); // Center index around 0
-        tapeInner.appendChild(cell);
-      }
-    }
-
-    function updateTape(tape, headPosition) {
-        const tapeWrapper = document.getElementById('tape-wrapper');
-        const tapeInner = document.getElementById('tape-inner');
-
-        if (!tapeWrapper || !tapeInner) {
-          console.error("Tape elements not found during update!");
+      // === TAPE VISUALIZATION ===
+      function initializeTape() {
+        const { tapeContainer, tapeWrapper, tapeInner } = GameState.elements;
+        
+        if (!Utils.validateDOMElement(tapeContainer, 'Tape container') ||
+            !Utils.validateDOMElement(tapeWrapper, 'Tape wrapper') ||
+            !Utils.validateDOMElement(tapeInner, 'Tape inner')) {
           return;
         }
+        
+        resetTapeDisplay();
+        setupTapeDimensions();
+        createTapeCells();
+      }
+
+      function resetTapeDisplay() {
+        GameState.elements.tapeInner.innerHTML = '';
+        GameState.elements.tapeInner.style.transform = 'translateX(0px)';
+      }
+
+      function setupTapeDimensions() {
+        const tapeWidth = CONSTANTS.NUM_VISIBLE_CELLS * Utils.getCellTotalWidth();
+        GameState.elements.tapeContainer.style.width = `${tapeWidth}px`;
+        GameState.elements.tapeWrapper.style.width = `${tapeWidth}px`;
+      }
+
+      function createTapeCells() {
+        const centerOffset = 6; // For 13 cells, center is at index 6
+        
+        for (let i = 0; i < CONSTANTS.NUM_VISIBLE_CELLS; i++) {
+          const cell = document.createElement('span');
+          cell.className = 'cell';
+          cell.textContent = 'O';
+          cell.setAttribute('data-index', i - centerOffset);
+          GameState.elements.tapeInner.appendChild(cell);
+        }
+      }
+
+      function updateTape(tape, headPosition) {
+        const { tapeWrapper, tapeInner } = GameState.elements;
+        
+        if (!Utils.validateDOMElement(tapeWrapper, 'Tape wrapper') ||
+            !Utils.validateDOMElement(tapeInner, 'Tape inner')) {
+          return;
+        }
+        
         const cells = tapeInner.querySelectorAll('.cell');
         if (cells.length === 0) {
-            console.error("No cells found to update!");
-            return;
+          console.error('No cells found to update!');
+          return;
         }
+        
+        updateCellContents(cells, tape, headPosition);
+        centerTapeOnActiveCell(cells, tapeWrapper);
+      }
 
+      function updateCellContents(cells, tape, headPosition) {
+        cells.forEach(cell => {
+          cell.classList.remove('active');
+          const logicalIndex = parseInt(cell.getAttribute('data-index'));
+          const value = tape[logicalIndex] || 'O';
+          cell.textContent = value;
+          
+          if (logicalIndex === headPosition) {
+            cell.classList.add('active');
+          }
+        });
+      }
+
+      function centerTapeOnActiveCell(cells, tapeWrapper) {
         const tapeWidth = parseFloat(tapeWrapper.style.width);
         const visualCenter = tapeWidth / 2;
         
-        const centerDataIndex = 0; // The logical center of our tape data
-        // Find the DOM element that corresponds to the logical center data index, if it exists.
-        // Or more simply, the middle DOM element.
-        const centerCellDOMIndex = Math.floor(cells.length / 2);
-
-
-        cells.forEach(cell => {
-            cell.classList.remove('active');
-            const logicalIndex = parseInt(cell.getAttribute('data-index'));
-            const value = tape[logicalIndex] || 'O';
-            cell.textContent = value;
-        });
-
         let activeCellDOMIndex = -1;
         for (let i = 0; i < cells.length; i++) {
-            const logicalIndex = parseInt(cells[i].getAttribute('data-index'));
-            if (logicalIndex === headPosition) {
-                cells[i].classList.add('active');
-                activeCellDOMIndex = i;
-                break;
-            }
+          if (cells[i].classList.contains('active')) {
+            activeCellDOMIndex = i;
+            break;
+          }
         }
         
         if (activeCellDOMIndex !== -1) {
-            // Center based on the DOM position of the active cell
-            const activeCellVisualCenter = activeCellDOMIndex * cellTotalWidth + (cellTotalWidth / 2);
-            const offset = visualCenter - activeCellVisualCenter;
-            tapeInner.style.transform = `translateX(${offset}px)`;
-        } else {
-            // Fallback: if active cell is not currently rendered (e.g. head moved off initial display)
-            // This attempts to keep the tape somewhat centered based on headPosition's logical relation to the center.
-            // This case implies the head is "off-screen" relative to current DOM cells.
-            // A more robust solution for infinite tapes would dynamically add/remove cells.
-            // For this game, headPosition should ideally stay within view based on targetSteps.
-            const offsetBasedOnHead = visualCenter - ( (headPosition + centerCellDOMIndex - parseInt(cells[centerCellDOMIndex].getAttribute('data-index'))) * cellTotalWidth + (cellTotalWidth / 2) );
-            tapeInner.style.transform = `translateX(${offsetBasedOnHead}px)`;
+          const cellTotalWidth = Utils.getCellTotalWidth();
+          const activeCellVisualCenter = activeCellDOMIndex * cellTotalWidth + (cellTotalWidth / 2);
+          const offset = visualCenter - activeCellVisualCenter;
+          GameState.elements.tapeInner.style.transform = `translateX(${offset}px)`;
         }
-    }
-
-    // --- Machine Control ---
-    function stopMachine() {
-         if (machineTimeout) {
-            clearTimeout(machineTimeout);
-            machineTimeout = null;
-         }
-         isRunning = false;
-    }
-
-    function resetMachine() {
-      stopMachine();
-      currentTape = {};
-      currentHeadPosition = 0;
-
-      document.getElementById('currentState').textContent = 'A';
-      document.getElementById('result').textContent = '';
-      document.getElementById('result').className = '';
-      document.getElementById('stepCount').textContent = '0';
-
-      // initializeTape is called by setupGame. updateTape will render the reset state.
-      if (document.getElementById('tape-inner')?.children.length > 0) {
-           updateTape(currentTape, currentHeadPosition);
-      } else {
-           // This case should ideally not be hit if setupGame runs first
-           initializeTape(); 
-           setTimeout(() => updateTape(currentTape, currentHeadPosition), 0);
       }
-    }
 
-    function runMachine() {
-      if (isRunning) return;
-      // resetMachine() is implicitly called via setupGame() before a new run.
-      isRunning = true;
-
-      let tape = { ...currentTape }; 
-      let headPosition = currentHeadPosition; 
-      let state = 'A'; 
-      let steps = 0;
-      const maxSteps = targetSteps; 
-
-      document.getElementById('currentState').textContent = state;
-      document.getElementById('stepCount').textContent = steps;
-      updateTape(tape, headPosition); 
-
-      function step() {
-        if (!isRunning) return;
-        const result = document.getElementById('result');
-        result.textContent = '';
-        result.className = ''; // Remove success/failure class
-
-        const currentSymbol = tape[headPosition] || 'O';
-        const rule = getRule(state, currentSymbol);
-
-        tape[headPosition] = rule.write;
-        headPosition += rule.move === 'Right' ? 1 : -1;
-        state = rule.next;
-        steps++;
-
-        document.getElementById('stepCount').textContent = steps;
-        document.getElementById('currentState').textContent = state;
-        updateTape(tape, headPosition);
-
-        if (state === 'Stop') {
-            if (steps === maxSteps) {
-                result.textContent = `Success!`;
-                result.className = 'success';
-            } else {
-                result.textContent = `Fail!`;
-                result.className = 'failure';
-            }
-            stopMachine();
-            return;
+      // === MACHINE CONTROL ===
+      function stopMachine() {
+        if (GameState.machineTimeout) {
+          clearTimeout(GameState.machineTimeout);
+          GameState.machineTimeout = null;
         }
+        GameState.isRunning = false;
+      }
 
-        if (steps >= maxSteps) {
-            result.textContent = `Fail!`;
-            result.className = 'failure';
-            stopMachine();
-            return;
+      function resetMachine() {
+        stopMachine();
+        GameState.currentTape = {};
+        GameState.currentHeadPosition = 0;
+        
+        updateDisplay('A', '', '', '0');
+        
+        if (GameState.elements.tapeInner?.children.length > 0) {
+          updateTape(GameState.currentTape, GameState.currentHeadPosition);
+        } else {
+          initializeTape();
+          setTimeout(() => updateTape(GameState.currentTape, GameState.currentHeadPosition), 0);
         }
+      }
 
-        machineTimeout = setTimeout(step, 350);
-    }
-    step();
+      function updateDisplay(state, resultText, resultClass, stepCount) {
+        if (GameState.elements.currentState) {
+          GameState.elements.currentState.textContent = state;
+        }
+        if (GameState.elements.result) {
+          GameState.elements.result.textContent = resultText;
+          GameState.elements.result.className = resultClass;
+        }
+        if (GameState.elements.stepCount) {
+          GameState.elements.stepCount.textContent = stepCount;
+        }
+      }
 
-    }
+      function runMachine() {
+        if (GameState.isRunning) return;
+        
+        GameState.isRunning = true;
+        
+        const machineState = {
+          tape: { ...GameState.currentTape },
+          headPosition: GameState.currentHeadPosition,
+          state: 'A',
+          steps: 0,
+          maxSteps: GameState.targetSteps
+        };
+        
+        updateDisplay(machineState.state, '', '', machineState.steps.toString());
+        updateTape(machineState.tape, machineState.headPosition);
+        
+        executeMachineStep(machineState);
+      }
 
-    // Initialize when page loads
-    window.onload = () => {
-        const defaultLevel = 1; 
+      function executeMachineStep(machineState) {
+        if (!GameState.isRunning) return;
+        
+        updateDisplay(machineState.state, '', '', machineState.steps.toString());
+        
+        const currentSymbol = machineState.tape[machineState.headPosition] || 'O';
+        const rule = getRule(machineState.state, currentSymbol);
+        
+        // Apply rule
+        machineState.tape[machineState.headPosition] = rule.write;
+        machineState.headPosition += rule.move === 'Right' ? 1 : -1;
+        machineState.state = rule.next;
+        machineState.steps++;
+        
+        updateDisplay(machineState.state, '', '', machineState.steps.toString());
+        updateTape(machineState.tape, machineState.headPosition);
+        
+        // Check termination conditions
+        if (machineState.state === 'Stop') {
+          const success = machineState.steps === machineState.maxSteps;
+          updateDisplay(machineState.state, success ? 'Success!' : 'Fail!', success ? 'success' : 'failure', machineState.steps.toString());
+          stopMachine();
+          return;
+        }
+        
+        if (machineState.steps >= machineState.maxSteps) {
+          updateDisplay(machineState.state, 'Fail!', 'failure', machineState.steps.toString());
+          stopMachine();
+          return;
+        }
+        
+        GameState.machineTimeout = setTimeout(() => executeMachineStep(machineState), CONSTANTS.STEP_DELAY);
+      }
+
+      // === INITIALIZATION ===
+      window.onload = () => {
+        initializeDOMCache();
+        
+        const defaultLevel = 1;
         const radio = document.querySelector(`input[name="level"][value="${defaultLevel}"]`);
         if (radio) {
-            radio.checked = true;
+          radio.checked = true;
         }
-        setupGame(defaultLevel); 
-    };
-  </script>
-
+        setupGame(defaultLevel);
+      };
+    </script>
+  </div>
 </body>
 </html>
