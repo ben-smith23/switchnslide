@@ -18,10 +18,10 @@
       <label><input type="radio" name="level" value="5" onclick="setupGame(5)"> 5</label>
     </div>
 
-    <p id="goal">Goal: Set instructions that slide the Cell Tape exactly N times.</p>
+    <p id="goal">Goal: Slide the Cell Tape exactly N times.</p>
 
     <div class="rules-container">
-      <div class="rule-header">Instructions:</div>
+      <div class="rule-header">Settings:</div>
       <div id="rules"></div>
     </div>
 
@@ -68,7 +68,7 @@
           targetSteps = level + 1; // New Level 1 -> 2 slides, Level 2 -> 3 slides, etc.
   
           const goalText = document.getElementById('goal');
-          goalText.innerHTML = `Goal: Set instructions that slide the Cell Tape exactly ${targetSteps} times. <br>Cells are marked with X as you slide past.`;
+          goalText.innerHTML = `Goal: Slide the Cell Tape exactly ${targetSteps} times.`;
   
           buildUI();
           initializeTape();
