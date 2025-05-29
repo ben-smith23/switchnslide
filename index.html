@@ -74,7 +74,8 @@
           goalText.innerHTML = `
   <strong>Goals:</strong><br>
   1. Figure out the rules.<br>
-  2. Slide the Cell Tape exactly <strong>${targetSteps}</strong> times.
+  2. Slide the Cell Tape exactly <strong>${targetSteps}</strong> times.<br>
+  3. Submit the answer form.
 `;
 
   
@@ -135,6 +136,8 @@
           } else if (state === 'B' && symbol === 'O') {
             moveBtn.textContent = 'Right';
             moveBtn.disabled = true;
+            nextBtn.textContent = 'Yes';
+            nextBtn.disabled = true;
 
             let nextIndex = 0;
             nextBtn.textContent = nextStateOptionsText[nextIndex];
